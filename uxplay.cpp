@@ -180,6 +180,9 @@ static std::string lang = "";
 static std::string url = "";
 static guint gst_x11_window_id = 0;
 static guint video_eos_watch_id = 0;
+static guint video_hls_position_watch_id = 0;
+static double hls_position = -1.0f;
+static double hls_duration = -1.0f;
 static guint progress_id = 0;
 static guint gst_hls_position_id = 0;
 static bool preserve_connections = false;
@@ -651,6 +654,26 @@ static gboolean progress_callback (gpointer loop) {
     }
 }
 
+static gboolean video_hls_position_watch_callback (gpointer loop) {
+    gint64 prev_position = hls_position;
+    if (video_renderer_get_hls_position(&hls_position, &hls_duration)) {
+        if (scrsv == 1) {
+            if (hls_position > 0 && hls_duration > 0 && hls_position > prev_position && !dbus_last_message) {
+                dbus_screensaver_inhibiter(true);
+            } else if (dbus_last_message) {
+                dbus_screensaver_inhibiter(false);
+            }
+	}
+        if (hls_position > 0 && hls_duration > 0) {
+            printf("hls position %f duration %f  %f\n", hls_position, hls_duration, hls_position / hls_duration);
+        }
+        return true;
+    } else {
+         video_hls_position_watch_id = 0;
+         return false;
+    }
+}
+
 static gboolean video_eos_watch_callback (gpointer loop) {
     if (video_renderer_eos_watch()) {
         /* HLS video has sent EOS */
@@ -674,6 +697,8 @@ static void main_loop()  {
     preserve_connections = false;
     n_video_renderers = 0;
     n_audio_renderers = 0;
+    hls_position = -1;
+    hls_duration = -1;
     if (use_video) {
         n_video_renderers = 1;
         relaunch_video = true;
@@ -690,6 +715,7 @@ static void main_loop()  {
         } else {
             /* hls video will be rendered: renderer[0] : hls  */
             url.erase();
+            video_hls_position_watch_id = g_timeout_add(1000, (GSourceFunc) video_hls_position_watch_callback, (gpointer) loop);
             video_eos_watch_id = g_timeout_add(100, (GSourceFunc) video_eos_watch_callback, (gpointer) loop);
             gst_x11_window_id = g_timeout_add(100, (GSourceFunc) x11_window_callback, (gpointer) loop);
         }
@@ -749,6 +775,7 @@ static void main_loop()  {
     if (reset_watch_id > 0) g_source_remove(reset_watch_id);
     if (progress_id > 0) g_source_remove(progress_id);
     if (video_eos_watch_id > 0) g_source_remove(video_eos_watch_id);
+    if (video_hls_position_watch_id > 0) g_source_remove(video_hls_position_watch_id);
     if (feedback_watch_id > 0) g_source_remove(feedback_watch_id);
     g_main_loop_unref(loop);
 }    
@@ -945,7 +972,7 @@ static void print_info (char *name) {
     printf("-vp ...   Choose the GSteamer h264 parser: default \"h264parse\"\n");
     printf("-vd ...   Choose the GStreamer h264 decoder; default \"decodebin\"\n");
     printf("          choices: (software) avdec_h264; (hardware) v4l2h264dec,\n");
-    printf("          nvdec, nvh264dec, vaapih64dec, vtdec,etc.\n");
+    printf("          nvdec, nvh264dec, vaapih264dec, vtdec,etc.\n");
     printf("          choices: avdec_h264,vaapih264dec,nvdec,nvh264dec,v4l2h264dec\n");
     printf("-vc ...   Choose the GStreamer videoconverter; default \"videoconvert\"\n");
     printf("          another choice when using v4l2h264dec: v4l2convert\n");
@@ -2607,7 +2634,7 @@ extern "C" void on_video_acquire_playback_info (void *cls, playback_info_t *play
     playback_info->ready_to_play = true; //?
     playback_info->playback_likely_to_keep_up = true; //?
     
-#ifdef DBUS
+#ifdef DBUS00
     /*  this seems to be  called every second for first 900 secs (15 mins?) of HLS video, and subsequently
 	at 30 second intervals (use it to signal HLS video activity to  the  DBus screensaver inhibitor) */
     if (scrsv == 1) {
