@@ -1329,10 +1329,9 @@ udpsrc port=XXXX \
 ! 'application/x-rtp, media=video, clock-rate=90000, encoding-name=H264, payload=96' \
 ! rtph264depay   ! h264parse   ! decodebin   ! videoconvert   !
 autovideosink sync=false 
-
+```
 _(Replace XXXX by the port you will use: make sure it is not blocked by a firewall; replace "264" by "265" if you are
 streaming h265 video)._ 
-```
 
 * To use the -vrtp option with with OBS-studio, install the [obs-gstreamer](https://github.com/fzwoch/obs-gstreamer) plugin; after the
 plugin installation,
@@ -1976,6 +1975,9 @@ to an external renderer (e.g., OBS Studio), and -artp for audio.  Check that
 option input strings have valid UTF-8 encoding.   New option `-lang fr:es:en`
 to specify language preferences for YouTube  HLS videos when they offer a choice. 
 New option -mp4 for recording to a mp4 file (Mirror and Audio mode, not HLS)
+
+1.72.3 2025-12-20 Fix bug reported in CVE-2025-60458 whereby a specially-crafted
+client TEARDOWN request can crash UxPlay (denial of service attack).
 
 1.72.2 2025-07-07  Fix bug (typo) in DNS_SD advertisement introduced with -pw
 option.  Update llhttp to v 9.3.0

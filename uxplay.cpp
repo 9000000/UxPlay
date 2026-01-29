@@ -979,7 +979,7 @@ static void print_info (char *name) {
     printf("-vs ...   Choose the GStreamer videosink; default \"autovideosink\"\n");
     printf("          some choices: ximagesink,xvimagesink,vaapisink,glimagesink,\n");
     printf("          gtksink,waylandsink,kmssink,fbdevsink,osxvideosink,\n");
-    printf("          d3d11videosink,d3v12videosink, etc.\n");
+    printf("          d3d11videosink,d3d12videosink, etc.\n");
     printf("-vs 0     Streamed audio only, with no video display window\n");
     printf("-vrtp pl  Use rtph26[4,5]pay to send decoded video elsewhere: \"pl\"\n");
     printf("          is the remaining pipeline, starting with rtph26*pay options:\n");
